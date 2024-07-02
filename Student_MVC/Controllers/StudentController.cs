@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Student_MVC.Models;
+using Student_MVC.Services;
 
 namespace Student_MVC.Controllers
 {
@@ -13,69 +14,56 @@ namespace Student_MVC.Controllers
     [ApiController]
     public class StudentController : ControllerBase
     {
-        private readonly StdContext context;
+        
+        private readonly IStudentRepository studentRepository;
 
-        public StudentController(StdContext context)
+        public StudentController(IStudentRepository studentRepository)
         {
-            this.context = context;
+            
+            this.studentRepository = studentRepository;
         }
 
         // GET: api/StudentControllerApi
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Student>>> GetStudents()
+        public  IActionResult GetStudents()
         {
-          if (context.Students == null)
+            
+          if (studentRepository.GetAll() == null)
           {
               return NotFound();
           }
-            return await context.Students.ToListAsync();
+            return Ok(studentRepository.GetAll());
         }
 
         // GET: api/StudentControllerApi/5
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<Student>> GetStudent(int id)
+        public IActionResult GetStudent(int id)
         {
-          if (context.Students == null)
+          if (studentRepository.GetAll() == null)
           {
               return NotFound();
           }
-            var student = await context.Students.FindAsync(id);
+            var student = studentRepository.GetStd(id);
 
             if (student == null)
             {
                 return NotFound();
             }
 
-            return student;
+            return Ok (student);
         }
 
         // PUT: api/StudentControllerApi/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> PutStudent(int id, Student student)
+        public IActionResult PutStudent(int id, Student student)
         {
             if (id != student.Id)
             {
                 return BadRequest();
             }
 
-            context.Entry(student).State = EntityState.Modified;
-
-            try
-            {
-                await context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!StudentExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            studentRepository.UpdateStd(id, student);
 
             return NoContent();
         }
@@ -83,41 +71,39 @@ namespace Student_MVC.Controllers
         // POST: api/StudentControllerApi
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Student>> PostStudent(Student student)
+        public IActionResult PostStudent(Student student)
         {
-          if (context.Students == null)
+          if (studentRepository.GetAll() == null)
           {
               return Problem("Entity set 'StdContext.Students'  is null.");
           }
-            context.Students.Add(student);
-            await context.SaveChangesAsync();
+
+            studentRepository.InsertStd(student);
+            
 
             return CreatedAtAction("GetStudent", new { id = student.Id }, student);
         }
 
         // DELETE: api/StudentControllerApi/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteStudent(int id)
+        public IActionResult DeleteStudent(int id)
         {
-            if (context.Students == null)
+            if (studentRepository.GetAll() == null)
             {
                 return NotFound();
             }
-            var student = await context.Students.FindAsync(id);
+            var student = studentRepository.GetStd(id);
             if (student == null)
             {
                 return NotFound();
             }
 
-            context.Students.Remove(student);
-            await context.SaveChangesAsync();
+            studentRepository.DeleteStd(student.Id);
+            
 
             return NoContent();
         }
 
-        private bool StudentExists(int id)
-        {
-            return (context.Students?.Any(e => e.Id == id)).GetValueOrDefault();
-        }
+        
     }
 }

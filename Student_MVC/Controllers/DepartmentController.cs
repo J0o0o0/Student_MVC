@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Student_MVC.Models;
+using Student_MVC.Services;
 
 namespace Student_MVC.Controllers
 {
@@ -13,69 +14,60 @@ namespace Student_MVC.Controllers
     [ApiController]
     public class DepartmentController : ControllerBase
     {
-        private readonly StdContext context;
+        
+        private readonly IDepartmentRepository departmentRepository;
 
-        public DepartmentController(StdContext context)
+        public DepartmentController(IDepartmentRepository departmentRepository)
         {
-            this.context = context;
+           
+            this.departmentRepository = departmentRepository;
         }
 
         // GET: api/Department
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Department>>> GetDepartments()
+        public IActionResult GetDepartments()
         {
-          if (context.Departments == null)
+          if (departmentRepository.GetAll() == null)
           {
               return NotFound();
           }
-            return await context.Departments.ToListAsync();
+            return Ok(departmentRepository.GetAll());
         }
 
         // GET: api/Department/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Department>> GetDepartment(int id)
+        public IActionResult GetDepartment(int id)
         {
-          if (context.Departments == null)
+          if (departmentRepository.GetAll() == null)
           {
               return NotFound();
           }
-            var department = await context.Departments.FindAsync(id);
+            var department = departmentRepository.GetDept(id);
 
             if (department == null)
             {
                 return NotFound();
             }
+            else
+            {
+                return Ok(department);
 
-            return department;
+            }
+
         }
 
         // PUT: api/Department/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+       
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutDepartment(int id, Department department)
+        public IActionResult PutDepartment(int id, Department department)
         {
             if (id != department.Id)
             {
                 return BadRequest();
             }
 
-            context.Entry(department).State = EntityState.Modified;
+            departmentRepository.UpdateDept(id, department);
 
-            try
-            {
-                await context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!DepartmentExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
 
             return NoContent();
         }
@@ -83,41 +75,37 @@ namespace Student_MVC.Controllers
         // POST: api/Department
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Department>> PostDepartment(Department department)
+        public IActionResult PostDepartment(Department department)
         {
-          if (context.Departments == null)
+          if (departmentRepository.GetAll()  == null)
           {
               return Problem("Entity set 'StdContext.Departments'  is null.");
           }
-            context.Departments.Add(department);
-            await context.SaveChangesAsync();
-
+            departmentRepository.InsertDept(department);
+            
             return CreatedAtAction("GetDepartment", new { id = department.Id }, department);
         }
 
         // DELETE: api/Department/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteDepartment(int id)
+        public IActionResult DeleteDepartment(int id)
         {
-            if (context.Departments == null)
+            if (departmentRepository.GetAll() == null)
             {
                 return NotFound();
             }
-            var department = await context.Departments.FindAsync(id);
+            var department = departmentRepository.GetDept(id);
             if (department == null)
             {
                 return NotFound();
             }
 
-            context.Departments.Remove(department);
-            await context.SaveChangesAsync();
+            departmentRepository.DeleteDept(department.Id);
+            
 
             return NoContent();
         }
 
-        private bool DepartmentExists(int id)
-        {
-            return (context.Departments?.Any(e => e.Id == id)).GetValueOrDefault();
-        }
+       
     }
 }
